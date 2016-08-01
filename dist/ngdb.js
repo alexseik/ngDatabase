@@ -131,7 +131,7 @@ function ngdbQuery($q, $cordovaSQLite) {
 	var _dbConnexion = function() {
 
 		_db = (window.cordova) ?
-			$cordovaSQLite.openDB('ngdb.db') :
+			window.sqlitePlugin.openDatabase({name: 'ngdb.db', location: 'default'}) :
 			window.openDatabase('ngdb.db', '1', 'ngdb.db', -1);
 
 		return (_db);
@@ -223,19 +223,23 @@ function ngdbRepository($q, $injector, ngdbUtils, ngdbQuery, ngdbQueryBuilder, n
 	/*
 	** USER METHODS
 	*/
-	self.get = function() {
+	self.get = function(disableCache) {
+	    if (!disableCache) {
+	      disableCache = false;
+	    }
 		var deferred 	= $q.defer();
 		var query 		= this.buildQuery('SELECT');
 		var cache 		= ngdbCache.getCache(_repositoryName, query, _formatGet);
 
-		if (cache === false) {
+		if (cache === false || disableCache) {
 			var result = ngdbQuery.make(query['query'], query['binds']);
 
 			result.then(function(result) {
 				var formated = _formatGet(result);
-
 				deferred.resolve(formated);
-				ngdbCache.putCache(_repositoryName, query, _formatGet, formated);
+        if (!disableCache) {
+          ngdbCache.putCache(_repositoryName, query, _formatGet, formated);
+        }
 			}, deferred.reject);
 		}
 		else {
@@ -245,19 +249,24 @@ function ngdbRepository($q, $injector, ngdbUtils, ngdbQuery, ngdbQueryBuilder, n
 		return (this.resetBuilder(), deferred.promise);
 	};
 
-	self.getOne = function() {
+	self.getOne = function(disableCache) {
+	    if (!disableCache) {
+	      disableCache = false;
+	    }
 		var deferred 	= $q.defer();
 		var query 		= this.setLimit(0, 1).buildQuery('SELECT');
 		var cache 		= ngdbCache.getCache(_repositoryName, query, _formatGetOne);
 
-		if (cache === false) {
+		if (cache === false || disableCache) {
 			var result = ngdbQuery.make(query['query'], query['binds']);
 
 			result.then(function(result) {
 				var formated = _formatGetOne(result);
 
 				deferred.resolve(formated);
-				ngdbCache.putCache(_repositoryName, query, _formatGetOne, formated);
+        if (!disableCache) {
+          ngdbCache.putCache(_repositoryName, query, _formatGetOne, formated);
+        }
 			}, deferred.reject);
 		}
 		else {
